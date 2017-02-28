@@ -1,0 +1,527 @@
+
+name: "LSTM"
+
+input: "data"
+input_shape {
+  dim: 1
+  dim: 16384
+  dim: 1
+  dim: 1
+}
+layer {
+  name: "data_cnn"
+  type: "Reshape"
+  bottom: "data"
+  top: "data_cnn"
+  reshape_param {
+    shape {
+    dim: 1
+    dim: 1
+    dim: 128
+    dim: -1
+    }
+  }
+}
+layer {
+  name: "slicer1"
+  type: "Slice"
+  bottom: "data"
+  top: "out1"
+  top: "out2"
+  slice_param {
+    axis: 1
+    slice_point: 16264 #Sarab: Need to get last 120 x 1 (From 16384 x 1)
+    #slice_point: 15360 #Sarab: Need to get last 1024 x 1 (From 16384 x 1)
+  }
+}
+layer {
+  name: "Silence"
+  type: "Silence"
+  bottom: "out1" #Sarab: Ignoring out1
+}
+layer {
+  name: "data_past"
+  type: "Reshape"
+  bottom: "out2"
+  top: "data_past"
+  reshape_param {
+    shape {
+    dim: 120
+    dim: -1
+    }
+  }
+}
+
+
+
+
+
+
+input: "clip"
+input_shape {
+  dim: 120
+  dim: 1
+}
+layer {
+  name: "clip_reshape"
+  type: "Reshape"
+  bottom: "clip"
+  top: "clip_r"
+  reshape_param {
+    shape {
+    dim: 120
+    dim: -1
+    }
+  }
+}
+
+
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "data_cnn"
+  top: "conv1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    pad: 2
+    kernel_size: 5
+  }
+}
+layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+layer {
+  name: "cccp1"
+  type: "Convolution"
+  bottom: "conv1"
+  top: "cccp1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 160
+    kernel_size: 1
+    group: 1
+  }
+}
+layer {
+  name: "relu_cccp1"
+  type: "ReLU"
+  bottom: "cccp1"
+  top: "cccp1"
+}
+layer {
+  name: "cccp2"
+  type: "Convolution"
+  bottom: "cccp1"
+  top: "cccp2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 96
+    kernel_size: 1
+    group: 1
+  }
+}
+layer {
+  name: "relu_cccp2"
+  type: "ReLU"
+  bottom: "cccp2"
+  top: "cccp2"
+}
+
+
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "cccp2"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+
+layer {
+  name: "drop3"
+  type: "Dropout"
+  bottom: "pool1"
+  top: "pool1"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+layer {
+  name: "conv2"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "conv2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    pad: 2
+    kernel_size: 5
+  }
+}
+layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "conv2"
+  top: "conv2"
+}
+layer {
+  name: "cccp3"
+  type: "Convolution"
+  bottom: "conv2"
+  top: "cccp3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    kernel_size: 1
+    group: 1
+  }
+}
+layer {
+  name: "relu_cccp3"
+  type: "ReLU"
+  bottom: "cccp3"
+  top: "cccp3"
+}
+layer {
+  name: "cccp4"
+  type: "Convolution"
+  bottom: "cccp3"
+  top: "cccp4"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    kernel_size: 1
+    group: 1
+  }
+}
+layer {
+  name: "relu_cccp4"
+  type: "ReLU"
+  bottom: "cccp4"
+  top: "cccp4"
+}
+
+
+
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "cccp4"
+  top: "pool2"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 2
+  }
+}
+
+layer {
+  name: "drop6"
+  type: "Dropout"
+  bottom: "pool2"
+  top: "pool2"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+layer {
+  name: "conv3"
+  type: "Convolution"
+  bottom: "pool2"
+  top: "conv3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    pad: 1
+    kernel_size: 3
+  }
+}
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
+}
+layer {
+  name: "cccp5"
+  type: "Convolution"
+  bottom: "conv3"
+  top: "cccp5"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    kernel_size: 1
+    group: 1
+  }
+}
+layer {
+  name: "relu_cccp5"
+  type: "ReLU"
+  bottom: "cccp5"
+  top: "cccp5"
+}
+layer {
+  name: "cccp6"
+  type: "Convolution"
+  bottom: "cccp5"
+  top: "cccp6"
+  param {
+    lr_mult: 0.1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 0.1
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 192
+    kernel_size: 1
+    group: 1
+  }
+}
+layer {
+  name: "relu_cccp6"
+  type: "ReLU"
+  bottom: "cccp6"
+  top: "cccp6"
+}
+
+
+
+#layers {
+#  name: "pool3"
+#  type: POOLING
+#  bottom: "cccp6"
+#  top: "pool3"
+#  pooling_param {
+#    pool: AVE
+#    kernel_size: 8
+#    stride: 1
+#  }
+#}
+layer {
+  name: "spp1"
+  type: "SPP"
+  bottom: "cccp6"
+  top: "spp1"
+  spp_param {
+    pool: MAX
+    pyramid_height: 3
+  }
+}
+#Sarab: Changed last pool layers to SPP; 
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "spp1"
+  top: "ip1"
+
+  inner_product_param {
+    num_output: 1000
+  }
+}
+layer {
+  name: "ip2"
+  type: "InnerProduct"
+  bottom: "ip1"
+  top: "ip2"
+
+  inner_product_param {
+    num_output: 120
+  }
+}
+layer {
+  name: "cnn_data_out"
+  type: "Reshape"
+  bottom: "ip2"
+  top: "cnn_data_out"
+  reshape_param {
+    shape {
+    dim: 120
+    dim: -1
+    }
+  }
+}
+
+layer {
+  type: 'Python'
+  name: 'cnn_data_out_bins'
+  top: 'cnn_data_out_bins'
+  bottom: 'data_past'
+  bottom: 'cnn_data_out'
+  python_param {
+    # the module name -- usually the filename -- that needs to be in $PYTHONPATH
+    module: 'TimeSeriesStepOutput'
+    # the layer name -- the class name in the module
+    layer: 'TimeSeriesStepOutput'
+  }
+  # set loss weight so Caffe knows this is a loss layer.
+  # since PythonLayer inherits directly from Layer, this isn't automatically
+  # known to Caffe
+  #loss_weight: 1
+}
+
+layer {
+  name: "concatForLSTM"
+  bottom: "cnn_data_out_bins"
+  bottom: "data_past"
+  top: "lstm_data_in1"
+  type: "Concat"
+  concat_param {
+    axis: -1
+  }
+}
+layer {
+  name: "lstm_data_in2"
+  type: "Reshape"
+  bottom: "lstm_data_in1"
+  top: "lstm_data_in2"
+  reshape_param {
+    shape {
+    dim: 120
+    dim: 1
+    dim: -1
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+layer {
+  name: "lstm1"
+  type: "LSTM"
+  bottom: "lstm_data_in2"
+  bottom: "clip_r"
+  top: "lstm1"
+
+  #lstm_param {
+  recurrent_param {
+    num_output: 100
+  }
+}
+layer {
+  name: "ip3"
+  type: "InnerProduct"
+  bottom: "lstm1"
+  top: "ip3"
+
+  inner_product_param {
+    num_output: 100
+  }
+}
+layer {
+  name: "ip4"
+  type: "InnerProduct"
+  bottom: "ip3"
+  top: "ip4"
+
+  inner_product_param {
+    num_output: 1 # This is numOfStreams. output will be of shape numtimeSteps X number of numOfStreams
+  }
+}
+layer {
+  name: "data_future1"
+  type: "Reshape"
+  bottom: "ip4"
+  top: "data_future1"
+  reshape_param {
+    shape {
+    dim: 120
+    dim: -1
+    }
+  }
+}
+layer {
+  type: 'Python'
+  name: 'data_future2'
+  top: 'data_future2'
+  bottom: 'data_past'
+  bottom: 'data_future1'
+  python_param {
+    # the module name -- usually the filename -- that needs to be in $PYTHONPATH
+    module: 'TimeSeriesStepOutput'
+    # the layer name -- the class name in the module
+    layer: 'TimeSeriesStepOutput'
+  }
+  # set loss weight so Caffe knows this is a loss layer.
+  # since PythonLayer inherits directly from Layer, this isn't automatically
+  # known to Caffe
+  #loss_weight: 1
+}
+
+
+
+
+
+
